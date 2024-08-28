@@ -1,0 +1,6 @@
+package-as: NameplateContextMenu
+
+ignore:
+  - .vscode
+  - .gitattributes
+  - README.md
