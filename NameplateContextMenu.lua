@@ -6,7 +6,7 @@ local CreateFrame, UIParent, InCombatLockdown, C_NamePlate, UnitCanAttack, UnitI
 local GetNamePlateForUnit, GetNamePlates = C_NamePlate.GetNamePlateForUnit, C_NamePlate.GetNamePlates
 
 -- Create the main frame for event handling
-local NameplateContextFrame = CreateFrame("Frame", UIParent)
+local NameplateContextFrame = CreateFrame("Frame", "NameplateContextFrame", UIParent)
 NameplateContextFrame:Hide()
 NameplateContextFrame.attachedVisibleFrames = {}
 NameplateContextFrame:RegisterEvent("NAME_PLATE_UNIT_ADDED")
