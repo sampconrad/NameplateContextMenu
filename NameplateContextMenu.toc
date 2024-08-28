@@ -1,0 +1,11 @@
+## Interface: 110002
+## Version: 1.2.0
+## IconTexture: Interface\ICONS\Pet_Type_Mechanical
+
+## Title: NameplateContextMenu
+## Notes: Allows you to right-click nameplates to bring up their context menu.
+## Author: sampconrad
+
+## X-Category: Interface Enhancements
+
+NameplateContextMenu.lua
