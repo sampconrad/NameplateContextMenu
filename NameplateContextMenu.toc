@@ -1,5 +1,5 @@
 ## Interface: 110002
-## Version: 1.2.2
+## Version: 1.2.3
 ## IconTexture: Interface\ICONS\Pet_Type_Mechanical
 
 ## Title: NameplateContextMenu
