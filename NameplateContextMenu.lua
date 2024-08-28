@@ -27,13 +27,14 @@ end
 local PersonalPlate_Btn = CreatePlateButton("PersonalPlate_Btn")
 local EnemyPlate_Btn = CreatePlateButton("EnemyPlate_Btn")
 
--- Helper functions
+-- Btn helper function
 local function AnchorBtn(Button, frame, unit)
     Button:Show()
     Button:SetPoint("CENTER", frame, "CENTER", 0, 0)
     Button:SetAttribute('unit', unit)
 end
 
+-- Anchors btn on Nameplate added
 local function HandlePlate_Added(unit)
     local frame = GetNamePlateForUnit(unit)
     if not frame then return end
@@ -45,6 +46,7 @@ local function HandlePlate_Added(unit)
     end
 end
 
+-- Hides btn on Nameplate removed
 local function HandlePlate_Removed(unit)
     if UnitIsUnit(unit, "player") then
         PersonalPlate_Btn:Hide()
@@ -53,6 +55,7 @@ local function HandlePlate_Removed(unit)
     end
 end
 
+-- Updates btn position
 local function UpdateBtnPosition()
     local playerFrame = GetNamePlateForUnit("player")
     if playerFrame and Plater and playerFrame.unitFrame.PlaterOnScreen then
@@ -67,6 +70,7 @@ local function UpdateBtnPosition()
     end
 end
 
+-- Callback called on nameplate creation/removal
 local function OnEvent_Callback(_, event, unit)
     if InCombatLockdown() then return end
 
