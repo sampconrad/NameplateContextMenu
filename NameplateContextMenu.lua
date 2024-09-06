@@ -15,47 +15,44 @@ NameplateContextFrame:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
 -- Create buttons for the player's and enemy/target nameplates
 local function CreatePlateButton(name)
     local button = CreateFrame("BUTTON", name, UIParent, "SecureActionButtonTemplate")
-    button:SetSize(200, 50)
-    button:RegisterForClicks('RightButtonUp', 'RightButtonDown')
-    button:SetAttribute('*type2', 'togglemenu')
-    if name == "PersonalPlate_Btn" then
-        button:SetAttribute('unit', 'player')
-    end
+    button:SetSize(300, 70)
+    button:RegisterForClicks('LeftButtonUp', 'LeftButtonDown', 'RightButtonUp', 'RightButtonDown')
+    button:Hide()
     return button
 end
 
 local PersonalPlate_Btn = CreatePlateButton("PersonalPlate_Btn")
 local EnemyPlate_Btn = CreatePlateButton("EnemyPlate_Btn")
 
--- Btn helper function
+-- Helper functions
 local function AnchorBtn(Button, frame, unit)
-    Button:Show()
-    Button:SetPoint("CENTER", frame, "CENTER", 0, 0)
+    Button:ClearAllPoints()
+    Button:SetPoint("CENTER", frame, "CENTER", -20, -10)
     Button:SetAttribute('unit', unit)
+    Button:SetAttribute('*type1', 'target')      -- Left-click to target the unit
+    Button:SetAttribute('*type2', 'togglemenu')  -- Right-click for context menu
+    Button:Show()
 end
 
--- Anchors btn on Nameplate added
 local function HandlePlate_Added(unit)
     local frame = GetNamePlateForUnit(unit)
     if not frame then return end
 
     if UnitIsUnit(unit, "player") then
-        AnchorBtn(PersonalPlate_Btn, frame, unit)
+        AnchorBtn(PersonalPlate_Btn, frame, "player")  -- Personal nameplate
     elseif UnitCanAttack("player", unit) then
-        AnchorBtn(EnemyPlate_Btn, frame, unit)
+        AnchorBtn(EnemyPlate_Btn, frame, unit)  -- Enemy nameplate
     end
 end
 
--- Hides btn on Nameplate removed
 local function HandlePlate_Removed(unit)
     if UnitIsUnit(unit, "player") then
-        PersonalPlate_Btn:Hide()
+        PersonalPlate_Btn:Hide()  -- Hide when personal plate is removed
     elseif UnitCanAttack("player", unit) then
-        EnemyPlate_Btn:Hide()
+        EnemyPlate_Btn:Hide()  -- Hide when enemy plate is removed
     end
 end
 
--- Updates btn position
 local function UpdateBtnPosition()
     local playerFrame = GetNamePlateForUnit("player")
     if playerFrame and Plater and playerFrame.unitFrame.PlaterOnScreen then
@@ -70,9 +67,8 @@ local function UpdateBtnPosition()
     end
 end
 
--- Callback called on nameplate creation/removal
 local function OnEvent_Callback(_, event, unit)
-    if InCombatLockdown() then return end
+    if InCombatLockdown() then return end  -- Ensure no actions happen during combat lockdown
 
     if event == "NAME_PLATE_UNIT_ADDED" then
         HandlePlate_Added(unit)
