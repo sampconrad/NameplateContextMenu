@@ -11,6 +11,7 @@ NameplateContextFrame:Hide()
 NameplateContextFrame.attachedVisibleFrames = {}
 NameplateContextFrame:RegisterEvent("NAME_PLATE_UNIT_ADDED")
 NameplateContextFrame:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
+NameplateContextFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
 
 -- Create buttons for the player's and enemy/target nameplates
 local function CreatePlateButton(name)
@@ -54,6 +55,8 @@ local function HandlePlate_Removed(unit)
 end
 
 local function UpdateBtnPosition()
+    if InCombatLockdown() then return end
+
     local playerFrame = GetNamePlateForUnit("player")
     if playerFrame and Plater and playerFrame.unitFrame.PlaterOnScreen then
         AnchorBtn(PersonalPlate_Btn, playerFrame, "player")
@@ -68,15 +71,20 @@ local function UpdateBtnPosition()
 end
 
 local function OnEvent_Callback(_, event, unit)
-    if InCombatLockdown() then return end  -- Ensure no actions happen during combat lockdown
-
-    if event == "NAME_PLATE_UNIT_ADDED" then
-        HandlePlate_Added(unit)
+    if event == "PLAYER_REGEN_ENABLED" then
+        -- Update buttons and positions after combat ends
+        UpdateBtnPosition()
+    elseif event == "NAME_PLATE_UNIT_ADDED" then
+        if not InCombatLockdown() then
+            HandlePlate_Added(unit)
+            UpdateBtnPosition()
+        end
     elseif event == "NAME_PLATE_UNIT_REMOVED" then
-        HandlePlate_Removed(unit)
+        if not InCombatLockdown() then
+            HandlePlate_Removed(unit)
+            UpdateBtnPosition()
+        end
     end
-
-    UpdateBtnPosition()
 end
 
 -- Register the callback function
