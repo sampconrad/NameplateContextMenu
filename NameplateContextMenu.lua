@@ -16,9 +16,10 @@ NameplateContextFrame:RegisterEvent("LOADING_SCREEN_DISABLED")
 
 -- Create buttons for the player's and enemy/target nameplates
 local function CreatePlateButton(name)
-  local button = CreateFrame("BUTTON", name, UIParent, "SecureActionButtonTemplate")
+  local button = CreateFrame("BUTTON", name, UIParent, "SecureUnitButtonTemplate")
+  button:EnableMouse(true)
+  button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
   button:SetSize(300, 70)
-  button:RegisterForClicks('LeftButtonUp', 'LeftButtonDown', 'RightButtonUp', 'RightButtonDown')
   button:Hide()
   return button
 end
@@ -31,8 +32,8 @@ local function AnchorBtn(Button, frame, unit)
   Button:ClearAllPoints()
   Button:SetPoint("CENTER", frame, "CENTER", -20, -10)
   Button:SetAttribute('unit', unit)
-  Button:SetAttribute('*type1', 'target') -- Left-click to target the unit
-  Button:SetAttribute('*type2', 'togglemenu') -- Right-click for context menu
+  Button:SetAttribute('type1', 'target') -- Left-click to target the unit
+  Button:SetAttribute('type2', 'togglemenu') -- Right-click for context menu
   Button:Show()
 end
 
