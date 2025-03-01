@@ -1,14 +1,13 @@
 ---@diagnostic disable: undefined-field
 -- Localize globals
 local _G = _G
-local CreateFrame, UIParent, InCombatLockdown, C_NamePlate, UnitCanAttack, UnitIsUnit, Plater, C_Timer = _G.CreateFrame,
-  _G.UIParent, _G.InCombatLockdown, _G.C_NamePlate, _G.UnitCanAttack, _G.UnitIsUnit, _G.Plater, _G.C_Timer
+local CreateFrame, UIParent, InCombatLockdown, C_NamePlate, UnitCanAttack, C_Timer = _G.CreateFrame,
+  _G.UIParent, _G.InCombatLockdown, _G.C_NamePlate, _G.UnitCanAttack, _G.C_Timer
 local GetNamePlateForUnit, GetNamePlates = C_NamePlate.GetNamePlateForUnit, C_NamePlate.GetNamePlates
 
 -- Create the main frame for event handling
 local NameplateContextFrame = CreateFrame("Frame", "NameplateContextFrame", UIParent)
 NameplateContextFrame:Hide()
-NameplateContextFrame.attachedVisibleFrames = {}
 NameplateContextFrame:RegisterEvent("NAME_PLATE_UNIT_ADDED")
 NameplateContextFrame:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
 NameplateContextFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
@@ -24,10 +23,10 @@ local function CreatePlateButton(name)
   return button
 end
 
-local PersonalPlate_Btn = CreatePlateButton("PersonalPlate_Btn")
-local EnemyPlate_Btn = CreatePlateButton("EnemyPlate_Btn")
+local PersonalPlate_Btn = CreatePlateButton("NameplateContextMenu_PERSONAL")
+local EnemyPlate_Btn = CreatePlateButton("NameplateContextMenu_ENEMY")
 
--- Helper functions
+-- Helper function to anchor a button to a frame
 local function AnchorBtn(Button, frame, unit)
   Button:ClearAllPoints()
   Button:SetPoint("CENTER", frame, "CENTER", -20, -10)
@@ -37,62 +36,33 @@ local function AnchorBtn(Button, frame, unit)
   Button:Show()
 end
 
+-- Update button positions for all nameplates
 local function UpdateBtnPosition()
   if InCombatLockdown() then
     return
   end
 
+  -- Update personal nameplate button
   local playerFrame = GetNamePlateForUnit("player")
-  if playerFrame and Plater and playerFrame.unitFrame.PlaterOnScreen then
+  if playerFrame and playerFrame:IsShown() then
     AnchorBtn(PersonalPlate_Btn, playerFrame, "player")
+  else
+    PersonalPlate_Btn:Hide()
   end
 
+  -- Update enemy nameplate buttons
   for _, nameplate in ipairs(GetNamePlates()) do
     local nameplateUnit = nameplate.namePlateUnitToken
-    if UnitCanAttack("player", nameplateUnit) then
+    if nameplateUnit and UnitCanAttack("player", nameplateUnit) then
       AnchorBtn(EnemyPlate_Btn, nameplate, nameplateUnit)
     end
   end
 end
 
-local function HandlePlate_Added(unit)
-  if InCombatLockdown() then
-    return
-  end
-
-  local frame = GetNamePlateForUnit(unit)
-  if not frame then
-    return
-  end
-
-  if UnitIsUnit(unit, "player") then
-    AnchorBtn(PersonalPlate_Btn, frame, "player") -- Personal nameplate
-  elseif UnitCanAttack("player", unit) then
-    AnchorBtn(EnemyPlate_Btn, frame, unit) -- Enemy nameplate
-  end
-
-  UpdateBtnPosition()
-end
-
-local function HandlePlate_Removed(unit)
-  if InCombatLockdown() then
-    return
-  end
-
-  if UnitIsUnit(unit, "player") then
-    PersonalPlate_Btn:Hide() -- Hide when personal plate is removed
-  elseif UnitCanAttack("player", unit) then
-    EnemyPlate_Btn:Hide() -- Hide when enemy plate is removed
-  end
-
-  UpdateBtnPosition()
-end
-
-local function OnEvent_Callback(_, event, unit)
-  if event == "NAME_PLATE_UNIT_ADDED" then
-    HandlePlate_Added(unit)
-  elseif event == "NAME_PLATE_UNIT_REMOVED" then
-    HandlePlate_Removed(unit)
+-- Event handler
+local function OnEvent_Callback(_, event)
+  if event == "NAME_PLATE_UNIT_ADDED" or event == "NAME_PLATE_UNIT_REMOVED" then
+    C_Timer.After(0.1, UpdateBtnPosition)
   else
     C_Timer.After(1, UpdateBtnPosition)
   end

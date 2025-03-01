@@ -1,5 +1,5 @@
-## Interface: 110002
-## Version: 1.4.0
+## Interface: 110100
+## Version: 2.0.0
 ## IconTexture: Interface\ICONS\Pet_Type_Mechanical
 
 ## Title: NameplateContextMenu
@@ -7,5 +7,17 @@
 ## Author: sampconrad
 
 ## X-Category: Interface Enhancements
+
+## Category-enUS: Unit Frames
+## Category-deDE: Einheitenfenster
+## Category-esES: Marcos de unidades
+## Category-esMX: Marcos de unidades
+## Category-frFR: Portraits d'unités
+## Category-itIT: Riquadri delle unità
+## Category-koKR: 개체창
+## Category-ptBR: Quadros de unidade
+## Category-ruRU: Рамки портретов
+## Category-zhCN: 单位框体
+## Category-zhTW: 單位框架
 
 NameplateContextMenu.lua
