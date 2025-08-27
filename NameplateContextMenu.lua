@@ -2,8 +2,14 @@
 local _, NCM = ...
 
 NCM.config = {
-  buttonSize = {300, 70}, -- size of the button on the nameplate
-  updateDelay = {0.1, 0.2}, -- first delay is for new nameplates, second delay is for nameplates that are already on the screen
+  buttonSize = {
+    300,
+    70
+  }, -- size of the button on the nameplate
+  updateDelay = {
+    0.1,
+    0.2
+  }, -- first delay is for new nameplates, second delay is for nameplates that are already on the screen
   events = {
     "NAME_PLATE_UNIT_ADDED",
     "NAME_PLATE_UNIT_REMOVED",
@@ -35,6 +41,10 @@ end
 NCM.tempBtnTable = {}
 
 NCM.ConfigureButton = function(button, frame, unit)
+  if InCombatLockdown() then
+    return
+  end
+
   button:EnableMouse(true)
   button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
   button:SetSize(NCM.config.buttonSize[1], NCM.config.buttonSize[2])
@@ -54,10 +64,8 @@ NCM.CreatePlateButtonForFrame = function(frame, unit)
   end
 
   if NCM.tempBtnTable[frame] then
-    if not InCombatLockdown() then
-      NCM.tempBtnTable[frame]:SetAttribute("unit", unit)
-      NCM.tempBtnTable[frame]:Show()
-    end
+    NCM.tempBtnTable[frame]:SetAttribute("unit", unit)
+    NCM.tempBtnTable[frame]:Show()
     return NCM.tempBtnTable[frame]
   end
 
@@ -71,15 +79,17 @@ end
 NCM.CleanupInvalidButtons = function()
   for frame, button in pairs(NCM.tempBtnTable) do
     if not frame:IsShown() or not frame.namePlateUnitToken then
-      if not InCombatLockdown() then
-        button:Hide()
-        NCM.tempBtnTable[frame] = nil
-      end
+      button:Hide()
+      NCM.tempBtnTable[frame] = nil
     end
   end
 end
 
 NCM.UpdateBtnPosition = function()
+  if InCombatLockdown() then
+    return
+  end
+
   NCM.CleanupInvalidButtons()
 
   for _, nameplate in ipairs(GetNamePlates()) do
