@@ -1,72 +1,115 @@
 ---@diagnostic disable: undefined-field
--- Localize globals
+local _, NCM = ...
+
+NCM.config = {
+  buttonSize = {300, 70}, -- size of the button on the nameplate
+  updateDelay = {0.1, 0.2}, -- first delay is for new nameplates, second delay is for nameplates that are already on the screen
+  events = {
+    "NAME_PLATE_UNIT_ADDED",
+    "NAME_PLATE_UNIT_REMOVED",
+    "PLAYER_REGEN_ENABLED",
+    "LOADING_SCREEN_DISABLED",
+    "PLAYER_TARGET_CHANGED"
+  }
+}
+
 local _G = _G
-local CreateFrame, UIParent, InCombatLockdown, C_NamePlate, UnitCanAttack, C_Timer = _G.CreateFrame,
-  _G.UIParent, _G.InCombatLockdown, _G.C_NamePlate, _G.UnitCanAttack, _G.C_Timer
-local GetNamePlateForUnit, GetNamePlates = C_NamePlate.GetNamePlateForUnit, C_NamePlate.GetNamePlates
 
--- Create the main frame for event handling
-local NameplateContextFrame = CreateFrame("Frame", "NameplateContextFrame", UIParent)
-NameplateContextFrame:Hide()
-NameplateContextFrame:RegisterEvent("NAME_PLATE_UNIT_ADDED")
-NameplateContextFrame:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
-NameplateContextFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
-NameplateContextFrame:RegisterEvent("LOADING_SCREEN_DISABLED")
+local CreateFrame = _G.CreateFrame
+local UIParent = _G.UIParent
+local InCombatLockdown = _G.InCombatLockdown
+local C_NamePlate = _G.C_NamePlate
+local UnitIsUnit = _G.UnitIsUnit
+local C_Timer = _G.C_Timer
+local GetNamePlateForUnit = C_NamePlate.GetNamePlateForUnit
+local GetNamePlates = C_NamePlate.GetNamePlates
 
--- Create buttons for the player's and enemy/target nameplates
-local function CreatePlateButton(name)
-  local button = CreateFrame("BUTTON", name, UIParent, "SecureUnitButtonTemplate")
+NCM.frame = CreateFrame("Frame", "NCMFrame", UIParent)
+local NCMFrame = NCM.frame
+NCMFrame:Hide()
+
+for _, event in ipairs(NCM.config.events) do
+  NCMFrame:RegisterEvent(event)
+end
+
+NCM.tempBtnTable = {}
+
+NCM.ConfigureButton = function(button, frame, unit)
   button:EnableMouse(true)
   button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-  button:SetSize(300, 70)
-  button:Hide()
-  return button
+  button:SetSize(NCM.config.buttonSize[1], NCM.config.buttonSize[2])
+
+  button:SetAttribute('type1', 'target')
+  button:SetAttribute('type2', 'togglemenu')
+
+  button:ClearAllPoints()
+  button:SetPoint("CENTER", frame, "CENTER", 0, 0)
+  button:SetAttribute("unit", unit)
+  button:Show()
 end
 
-local PersonalPlate_Btn = CreatePlateButton("NameplateContextMenu_PERSONAL")
-local EnemyPlate_Btn = CreatePlateButton("NameplateContextMenu_ENEMY")
-
--- Helper function to anchor a button to a frame
-local function AnchorBtn(Button, frame, unit)
-  Button:ClearAllPoints()
-  Button:SetPoint("CENTER", frame, "CENTER", -20, -10)
-  Button:SetAttribute('unit', unit)
-  Button:SetAttribute('type1', 'target') -- Left-click to target the unit
-  Button:SetAttribute('type2', 'togglemenu') -- Right-click for context menu
-  Button:Show()
-end
-
--- Update button positions for all nameplates
-local function UpdateBtnPosition()
-  if InCombatLockdown() then
+NCM.CreatePlateButtonForFrame = function(frame, unit)
+  if not frame or not unit then
     return
   end
 
-  -- Update personal nameplate button
-  local playerFrame = GetNamePlateForUnit("player")
-  if playerFrame and playerFrame:IsShown() then
-    AnchorBtn(PersonalPlate_Btn, playerFrame, "player")
-  else
-    PersonalPlate_Btn:Hide()
+  if NCM.tempBtnTable[frame] then
+    if not InCombatLockdown() then
+      NCM.tempBtnTable[frame]:SetAttribute("unit", unit)
+      NCM.tempBtnTable[frame]:Show()
+    end
+    return NCM.tempBtnTable[frame]
   end
 
-  -- Update enemy nameplate buttons
-  for _, nameplate in ipairs(GetNamePlates()) do
-    local nameplateUnit = nameplate.namePlateUnitToken
-    if nameplateUnit and UnitCanAttack("player", nameplateUnit) then
-      AnchorBtn(EnemyPlate_Btn, nameplate, nameplateUnit)
+  local button = CreateFrame("BUTTON", nil, UIParent, "SecureUnitButtonTemplate")
+  NCM.ConfigureButton(button, frame, unit)
+
+  NCM.tempBtnTable[frame] = button
+  return button
+end
+
+NCM.CleanupInvalidButtons = function()
+  for frame, button in pairs(NCM.tempBtnTable) do
+    if not frame:IsShown() or not frame.namePlateUnitToken then
+      if not InCombatLockdown() then
+        button:Hide()
+        NCM.tempBtnTable[frame] = nil
+      end
     end
   end
 end
 
--- Event handler
-local function OnEvent_Callback(_, event)
-  if event == "NAME_PLATE_UNIT_ADDED" or event == "NAME_PLATE_UNIT_REMOVED" then
-    C_Timer.After(0.1, UpdateBtnPosition)
-  else
-    C_Timer.After(1, UpdateBtnPosition)
+NCM.UpdateBtnPosition = function()
+  NCM.CleanupInvalidButtons()
+
+  for _, nameplate in ipairs(GetNamePlates()) do
+    local unit = nameplate.namePlateUnitToken
+    if unit and not UnitIsUnit(unit, "player") then
+      NCM.CreatePlateButtonForFrame(nameplate, unit)
+    end
+  end
+
+  local playerFrame = GetNamePlateForUnit("player")
+  if playerFrame then
+    NCM.CreatePlateButtonForFrame(playerFrame, "player")
   end
 end
 
--- Register the callback function
-NameplateContextFrame:SetScript("OnEvent", OnEvent_Callback)
+NCM.HandleEvent = function(_, event)
+  local delays = {
+    ["NAME_PLATE_UNIT_ADDED"] = NCM.config.updateDelay[1],
+    ["NAME_PLATE_UNIT_REMOVED"] = NCM.config.updateDelay[1],
+    ["PLAYER_REGEN_ENABLED"] = NCM.config.updateDelay[2],
+    ["LOADING_SCREEN_DISABLED"] = NCM.config.updateDelay[2],
+    ["PLAYER_TARGET_CHANGED"] = 0
+  }
+
+  local delay = delays[event]
+  if delay then
+    C_Timer.After(delay, NCM.UpdateBtnPosition)
+  else
+    NCM.UpdateBtnPosition()
+  end
+end
+
+NCMFrame:SetScript("OnEvent", NCM.HandleEvent)
